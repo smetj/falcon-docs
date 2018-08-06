@@ -18,21 +18,24 @@ class FalconDocumentationRouter(falcon.routing.DefaultRouter):
 
     def add_route(self, uri_template, method_map, resource, *args, **kwargs):
         self.resources.add(uri_template, resource, method_map)
-        super(FalconDocumentationRouter, self).add_route(uri_template,
-                                                         method_map, resource,
-                                                         *args, **kwargs)
+        super(FalconDocumentationRouter, self).add_route(
+            uri_template, method_map, resource, *args, **kwargs
+        )
 
 
 class FalconDocumentationResource(object):
-    def __init__(self, api):
+    def __init__(self, api, blacklist, header):
         self.api = api
+        self.blacklist = blacklist
+        self.header = header
 
-    def register(self, base_url='/docs'):
+    def register(self, base_url="/docs"):
         self.api.add_route(base_url, self)
         self.api.add_sink(self, prefix=base_url)
 
     def on_get(self, req, resp):
-        out = process(self.api._router.resources, self)
-        resp.content_type = 'text/html; charset=utf-8'
+        out = process(self.api._router.resources, self, self.blacklist)
+        resp.content_type = "text/html; charset=utf-8"
         resp.status = falcon.HTTP_200
+        out.insert(0, self.header)
         resp.data = wrap(out)
